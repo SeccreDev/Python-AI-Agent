@@ -1,4 +1,5 @@
 import os
+
 def get_file_content(working_directory, file_path):
     working_path = os.path.abspath(working_directory)
     full_path = os.path.abspath(os.path.join(working_path, file_path))
