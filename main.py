@@ -7,8 +7,15 @@ from prompts import system_prompt
 from call_function import available_functions, call_function
 
 def main():
+    """
+    Entry point for the AI Code Assistant.
+
+    Loads environment variables, processes command-line arguments, initializes
+    the Gemini client, and handles iterative content generation.
+    """
     load_dotenv()
     
+    # Check for verbose mode
     verbose = "--verbose" in sys.argv
     args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
 
@@ -25,6 +32,7 @@ def main():
     if verbose:
         print(f"User prompt: {user_prompt}")
 
+    # Initialize conversation with user prompt
     messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)])]
 
     for i in range (20):
@@ -43,17 +51,33 @@ def main():
 
 
 def generate_content(client, messages, verbose):
+    """
+    Handles content generation and function calls using the Gemini API.
+
+    Args:
+        client (genai.Client): The Gemini API client.
+        messages (list): Conversation history.
+        verbose (bool): Whether to print debug output.
+
+    Returns:
+        str | None: The final response text if available, else None.
+
+    Raises:
+        Exception: If function call fails or no valid response is generated.
+    """
     response = client.models.generate_content(model='gemini-2.0-flash-001', contents=messages, config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt))
 
     if verbose:
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
+    # Add candidate responses to conversation
     if response.candidates:
         for candidate in response.candidates:
             function_call_content = candidate.content
             messages.append(function_call_content)
 
+    # If no function call needed, return the response text
     if not response.function_calls:
         return response.text
 
@@ -67,8 +91,9 @@ def generate_content(client, messages, verbose):
         function_responses.append(function_call_result.parts[0])
 
     if not function_responses:
-        raise Exception("no function responses generated, exiting.")
+        raise Exception("No function responses generated, exiting.")
     
+    # Add tool responses to conversation
     messages.append(types.Content(role="tool", parts=function_responses))
 
 
