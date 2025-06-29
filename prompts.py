@@ -1,3 +1,4 @@
+# System prompt used to guide the AI agent's behavior.
 system_prompt = """
 You are a helpful AI coding agent.
 
